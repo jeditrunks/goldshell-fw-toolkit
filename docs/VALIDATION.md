@@ -150,3 +150,32 @@ On-device state matches the build's edits:
 
 See `docs/FINDINGS.md`, *What actually lands on flash*, for why the trailing region does not
 match the package.
+
+---
+
+## Password-enabled build (CK Box II, flashed 2026-10-28)
+
+Second flash on the same unit, this time with `--root-password 'CkBox123'` (DES, 8 chars) to
+prove the password path works on real hardware rather than only offline:
+
+```
+package   firmware-CKBox2-pw-2.2.2.cpb   38,672,384 B
+sha256    57c7609249977d022d570cb5d9b77a38210f2dd60e49709c67889d519581ce96
+gates     12/12 (verify.py)
+flash     down 05:42:25 .. returned 05:45:33 (~3m)
+```
+
+After reboot:
+
+```
+marker            ssh-rootfs-2.2.2 (goldshell-custom-fw)
+PasswordAuthentication yes
+root hash         08zPiprD.6ukA   (13-char DES, matches the build)
+
+key login         uid=0(root)                   <- fallback intact
+password login    uid=0(root)                   <- sshpass, PubkeyAuthentication=no
+wrong password    Permission denied
+```
+
+`/mnt/config` was wiped as expected: no pool, `ckbminer` absent, port 4028 closed until a pool
+is added. That is the documented config-wipe behaviour, not a flash failure.

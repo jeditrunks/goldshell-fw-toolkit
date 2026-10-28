@@ -119,6 +119,23 @@ Windows:
 
 `scp` to an OpenSSH 6.4 server may need the legacy protocol flag: `scp -O ...`.
 
+Confirmed on hardware (CK Box II, image built with `--root-password 'CkBox123'`):
+
+```
+$ sshpass -p 'CkBox123' ssh -o PreferredAuthentications=password \
+      -o PubkeyAuthentication=no root@<miner-ip> 'id'
+uid=0(root) gid=0(root) groups=0(root),10(wheel)
+
+$ sshpass -p 'wrongpass' ssh ... root@<miner-ip> 'id'
+Permission denied, please try again.
+```
+
+Key login keeps working in the same image, so it stays the fallback if a password is wrong.
+
+**Flashing wipes `/mnt/config`, so pools are lost.** After a password build lands, expect the
+miner idle (`ckbminer` not running, API port closed) until a pool is re-added — that is the
+config wipe, not a failed flash.
+
 ---
 
 ## Security notes — read before enabling this
@@ -148,4 +165,5 @@ key, sets `PasswordAuthentication no`, and the old hash in `shadow` is irrelevan
 | `--root-password` bakes a working hash | built an image, hash verified with `crypt()`; wrong password rejected |
 | `sshd_config` flips correctly | `grep` on the built rootfs |
 | image still passes all gates | `tools/verify.py` — 12/12 |
-| **password login over the network** | **not yet exercised on hardware** — would need a flash of a password-enabled build |
+| password login over the network | **verified on hardware** — flashed the password build, `sshpass -p 'CkBox123' ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no` → `uid=0(root)`; wrong password → `Permission denied` |
+| key login still works with password auth enabled | same image, key login verified alongside it |
