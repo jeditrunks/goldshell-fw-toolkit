@@ -149,6 +149,64 @@ config wipe, not a failed flash.
   port is a matter of hours at worst.
 - The password can only be changed by **rebuilding and reflashing**. There is no runtime path.
 
+## Reboots and persistence
+
+The rootfs is a **squashfs mounted read-only**. That single fact decides everything below:
+nothing written to `/` can survive, and nothing in `/` can be changed at runtime.
+
+| Thing | Survives reboot? | Why |
+|---|---|---|
+| root password (the baked hash) | **yes** | it lives in the squashfs, which the bootloader mounts unchanged |
+| your `authorized_keys` | **yes** | same reason |
+| `PasswordAuthentication yes/no` | **yes** | `sshd_config` is inside the image |
+| SSH host key | **yes**, and identically | baked into the stock image, dated Feb 2023 — see below |
+| pool / miner config | **yes** | `/mnt/config` is a separate vfat partition (`/dev/spiblock2`), not the rootfs |
+| anything you `passwd` or edit in `/etc` | **no** — impossible | `/etc` is read-only; the write fails immediately |
+
+So: **a reboot changes nothing.** The password you baked in is the password you get, every
+boot, until you rebuild and reflash.
+
+Verified by rebooting a CK Box II after a password build — back in **72 s**, with the password
+hash, `authorized_keys`, `PasswordAuthentication`, host key and pool config all unchanged, and
+hashing resumed on its own:
+
+```
+PASSWORD OK: uid=0(root) ...        hash 08zPiprD.6ukA      (unchanged)
+KEY OK: root                        pool file 262 bytes     (unchanged)
+host key   SHA256:ujkTm...ARBCZw    (unchanged)
+4028       Alive  1.24 GH/s         (miner restarted itself)
+```
+
+What *does* wipe config is a **flash** — the updater reformats `/mnt/config`, which is why pools
+disappear after installing a new image (seen twice on the CK Box II).
+
+### Host key: baked, stable, and shared
+
+```
+/etc/ssh_host_ecdsa_key   -rw-------  668 B  Feb 16  2023
+SHA256:ujkTmCjbKSMtEx+dbLVu/UFrfRXyZbusCxmPaARBCZw   <- identical before and after flashing
+```
+
+Because the key ships inside the stock rootfs and `/etc` is read-only, `sshd` can never
+regenerate it. Two consequences:
+
+- **No host-key-changed warnings** on reboot or reflash of the same firmware — handy.
+- **Every unit built from the same stock package presents the same host key.** If you care
+  about someone impersonating your miner on the LAN, pin the fingerprint in `known_hosts`
+  (`ssh-keyscan -t ecdsa <miner-ip> >> ~/.ssh/known_hosts`) or regenerate the keys as part of a
+  custom build.
+
+### To change the password
+
+There is no runtime path. Rebuild with a new `--root-password` (or `--root-hash`), reflash, and
+accept the ~3.5 minute outage plus the config wipe:
+
+```sh
+GOLDSHELL_KEY_PASS=... ./tools/build.py --stock stock.cpb --out custom.cpb \
+    --pubkey keys/id_rsa.pub --signing-key keys/fw_cmpt.pem --root-password 'newpass1'
+./tools/flash.sh <miner-ip> custom.cpb
+```
+
 ## Turning password auth back off
 
 Rebuild without `--root-password` / `--root-hash` and reflash. The resulting image keeps your

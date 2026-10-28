@@ -179,3 +179,34 @@ wrong password    Permission denied
 
 `/mnt/config` was wiped as expected: no pool, `ckbminer` absent, port 4028 closed until a pool
 is added. That is the documented config-wipe behaviour, not a flash failure.
+
+### Host key stability across a reflash
+
+The image was replaced twice on the same unit. The SSH host key did not change either time:
+
+```
+before flash   SHA256:ujkTmCjbKSMtEx+dbLVu/UFrfRXyZbusCxmPaARBCZw
+after  flash   SHA256:ujkTmCjbKSMtEx+dbLVu/UFrfRXyZbusCxmPaARBCZw
+file           /etc/ssh_host_ecdsa_key, dated Feb 16 2023, 668 B
+```
+
+It is baked into the stock rootfs, and `/etc` is mounted read-only, so `sshd` cannot regenerate
+it. Every unit flashed from the same stock package therefore shares this host key.
+
+### Reboot persistence (CK Box II, after the password build)
+
+Rebooted the flashed unit to test the persistence claims rather than infer them:
+
+```
+down 05:52:22 .. back 05:53:34   (72 s)
+PASSWORD OK   uid=0(root)          root hash 08zPiprD.6ukA  (unchanged)
+KEY OK        root                 authorized_keys intact
+pool          /mnt/config/minerd/settings/pools.json 262 B, url unchanged
+ckbminer      running, 4028 Alive, 1.24 GH/s after ~40 s
+host key      SHA256:ujkTmCjbKSMtEx+dbLVu/UFrfRXyZbusCxmPaARBCZw  (unchanged)
+```
+
+Nothing in the rootfs changed, because nothing can: it is a read-only squashfs. `/mnt/config`
+is a separate partition, so pool settings survive a reboot — they are only lost when an image
+is flashed.
+
