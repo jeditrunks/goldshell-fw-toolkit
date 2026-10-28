@@ -3,7 +3,12 @@
 Rebuild a Goldshell miner's rootfs from a **stock vendor package** and get permanent root
 SSH on hardware you own.
 
-**Status: verified on hardware.**
+**Covers every Goldshell model the recipe works on** — nothing in the tooling is model-specific:
+the rootfs offset, signature scheme and SSH-kill mechanism are shared, and the build budget is
+derived per image. Adding a model means supplying its own stock package, not editing code.
+
+This repo supersedes the model-specific predecessors (`kdbox-fw*`, `kdbox-ii-builder`, now
+removed). **Status: verified on hardware.**
 
 | Model | Firmware | MCB | Result |
 |---|---|---|---|
