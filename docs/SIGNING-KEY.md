@@ -32,7 +32,7 @@ along with everything needed to use it.
 
 `fw_cmpt.pem` is AES-encrypted, and decrypting it needs one passphrase. It is:
 
-- a single vendor-chosen string, **identical across every Goldshell model**;
+- a single vendor-chosen string, **the same on both models tested here** (KD Box II, CK Box II) — others not checked;
 - not published in this repository.
 
 Why not: with the passphrase, anyone can sign firmware for **any** Goldshell miner — KD, HS,

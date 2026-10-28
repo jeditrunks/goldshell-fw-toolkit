@@ -3,12 +3,16 @@
 Rebuild a Goldshell miner's rootfs from a **stock vendor package** and get permanent root
 SSH on hardware you own.
 
-**Covers every Goldshell model the recipe works on** — nothing in the tooling is model-specific:
-the rootfs offset, signature scheme and SSH-kill mechanism are shared, and the build budget is
-derived per image. Adding a model means supplying its own stock package, not editing code.
+**Aimed at Goldshell miners of this generation.** Two models are verified end to end:
+KD Box II 2.2.7 and CK Box II 2.2.2. Both share a rootfs at `0x389E00`, an RSA-signed
+`firmware.ius`, and the same `S50sshd` kill — which is why the tooling carries no
+model-specific code and the build budget is derived per image.
+
+Other models are **untested**. If one shares that layout it will probably work, but do not
+assume it: run `--inspect` on its stock package first and compare against the table above.
 
 This repo supersedes the model-specific predecessors (`kdbox-fw*`, `kdbox-ii-builder`, now
-removed). **Status: verified on hardware.**
+removed).
 
 | Model | Firmware | MCB | Result |
 |---|---|---|---|
