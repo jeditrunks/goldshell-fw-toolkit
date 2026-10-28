@@ -149,3 +149,27 @@ the rootfs.
   read but not type) and a full 32 MB `/dev/mtd0` backup.
 - Take that backup before experimenting further:
   `dd if=/dev/mtd0 of=/tmp/full.bin bs=65536` (needs root — which this firmware provides).
+
+---
+
+## What actually lands on flash (verified by readback)
+
+Read back `/dev/spiblock1` (the rootfs partition, `/dev/root` symlinks to it) on a flashed CK
+Box II and compared it against the package that was uploaded:
+
+```
+device body  (11,361,371 B, the squashfs)  f7e84d1c3fca9cf84f93073ce3d2446a
+package body (11,361,371 B)                f7e84d1c3fca9cf84f93073ce3d2446a   <- identical
+device tail  (477,093 B)                   0xFF fill (erased), not our zero padding
+```
+
+Two things follow:
+
+1. **The updater writes only the filesystem image**, sized from the squashfs superblock — not
+   the full rootfs region. The remainder of the partition stays as erased flash (`0xFF`).
+2. **A whole-region hash comparison will therefore never match** the built `.ius` region. To
+   audit a flash, compare the first `<squashfs size>` bytes, where that size is what the build
+   printed (`image  N bytes`). Comparing the region is the wrong unit.
+
+The zero padding in the packaged region exists so the container's entry size and the partition
+image stay consistent; the device ignores it.

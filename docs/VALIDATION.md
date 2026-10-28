@@ -125,3 +125,28 @@ ssh -i keys/id_rsa -o IdentitiesOnly=yes -o PubkeyAcceptedAlgorithms=+ssh-rsa ro
 
 If `--inspect` reports a different rootfs offset or a budget too small for your edits, stop
 there and read `docs/PROCEDURE.md` before building.
+
+---
+
+## Flash readback (CK Box II, after the fact)
+
+What is on the device is the image that was built — verified by reading the partition back and
+comparing hashes against the uploaded package:
+
+```
+/dev/spiblock1 body (11,361,371 B)   f7e84d1c3fca9cf84f93073ce3d2446a
+package          body (11,361,371 B)  f7e84d1c3fca9cf84f93073ce3d2446a   match
+/dev/spiblock1 tail (477,093 B)      0xFF (erased) — the updater writes only the fs image
+```
+
+On-device state matches the build's edits:
+
+```
+/etc/kdbox-custom-fw                ssh-rootfs-2.2.2 (kdbox-custom-fw)   <- image predates the rename
+/root/.ssh/authorized_keys          the build's key, 0600
+/etc/init.d/S50sshd stop()          neutralised (no killall sshd)
+/etc/sshd_config                    PermitRootLogin yes / PasswordAuthentication no
+```
+
+See `docs/FINDINGS.md`, *What actually lands on flash*, for why the trailing region does not
+match the package.
