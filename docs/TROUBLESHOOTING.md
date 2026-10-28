@@ -230,6 +230,21 @@ a few seconds.
 `minerd` polling the board while idle. Seen on a freshly flashed, pool-less box. Treat as
 noise unless hashing is also failing.
 
+**A package the tooling cannot read at all: MiniDOGE 2.2.7**
+
+Inspected as a control case, not a supported target. `firmware-Goldshell-MiniDOGE-2.2.7.cpb`
+(22,893,056 B, header `firmware-MCB_V5_4.tgz`) differs from the Box II family on three counts:
+
+| | Box II family (KD/CK) | MiniDOGE 2.2.7 |
+|---|---|---|
+| gzip members | 2 (rootfs + hashboard) | **1** |
+| rootfs filesystem | squashfs at `0x389E00` | **big-endian cramfs**, different offset |
+| `build.py --inspect` | reports the layout | **"no second gzip member found"** |
+
+So `--inspect` refusing a package is the tooling telling you the truth, not a bug — this is
+exactly why the supported list is two models and not "all Goldshell". Its chip is `ICT560`
+(scrypt); the image contains no `blake`/`kadena`/`eaglesong` strings anywhere.
+
 **Shares stay at `Accepted 0` for the first minutes**
 
 Normal at CKB difficulty. In the reference run the first accepted share landed at
