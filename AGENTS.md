@@ -97,6 +97,11 @@ ssh -i keys/id_rsa -o IdentitiesOnly=yes -o PubkeyAcceptedAlgorithms=+ssh-rsa \
 `GOLDSHELL_KEY_PASS` has no default. If it is unset, the build refuses — that is correct
 behaviour, not a bug to work around.
 
+Optional: bake a root password (adds `--root-password 'pw'` or `--root-hash <13-char DES>`;
+flips `PasswordAuthentication` to yes). The rootfs is **read-only**, so `passwd` on the device
+always fails — the password can only exist if it was built in. DES: 8 chars max, hash must not
+start with `$`. Detail: `docs/SSH-PASSWORD.md`.
+
 ---
 
 ## S4 · Decision table (symptom → first action)
@@ -109,6 +114,7 @@ behaviour, not a bug to work around.
 | firmware version unchanged after flash | updater rejected the package | read `TROUBLESHOOTING.md` §1, check member count/name |
 | box never returns after 4 min | rootfs may not have mounted | one power cycle; then serial header (out of scope) |
 | SSH `Permission denied (publickey)` | image trusts a different key | check the build's `--pubkey`; rebuild |
+| password login rejected, hash starts with `$` | wrong hash format — box is DES-only | rebuild with `--root-password`; 13-char hash, no `$` |
 | SSH negotiation failure | OpenSSH 6.4 | add `-o PubkeyAcceptedAlgorithms=+ssh-rsa` |
 | miner API refused **but web ok** | miner not started | check pool config (`TROUBLESHOOTING.md` §4) |
 | `ckbminer` absent, 4028 refused | **no pool configured** — expected | add a pool; not a flash failure |

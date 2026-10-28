@@ -22,6 +22,7 @@ the CK Box II proved it generalises.
 | [docs/VALIDATION.md](docs/VALIDATION.md) | what was actually observed on both models |
 | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | symptom → what it means → what to do, plus model differences |
 | [docs/SIGNING-KEY.md](docs/SIGNING-KEY.md) | the vendor key: what it is, where it lives, why the passphrase is not here |
+| [docs/SSH-PASSWORD.md](docs/SSH-PASSWORD.md) | password login: why it must be baked in, the DES/8-char limit, client setup |
 | [docs/FINDINGS.md](docs/FINDINGS.md) | how the container and the update chain work |
 | [docs/PROCEDURE.md](docs/PROCEDURE.md) | build internals: offsets, budgets, shrink list |
 | [docs/WEBGUI.md](docs/WEBGUI.md) | flashing from the web UI instead of the CLI |

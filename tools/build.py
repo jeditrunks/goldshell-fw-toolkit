@@ -63,6 +63,32 @@ SSHD_CONFIG_ADD = [
     "UseDNS no",
 ]
 
+# The rootfs is a read-only squashfs: /etc/shadow cannot be edited on the device
+# (`passwd` fails with "Read-only file system"). A password has to be baked in here.
+# The box's libcrypt is uClibc DES-only: 13-char hashes, passwords capped at 8 chars.
+DES_HASH_LEN = 13
+
+
+def des_crypt(password: str, salt: str) -> str:
+    """Produce a traditional DES crypt hash using whatever the host provides."""
+    attempts = [
+        ["perl", "-e", 'print crypt($ARGV[0], $ARGV[1])', password, salt],
+        ["python3", "-c",
+         "import crypt,sys;sys.stdout.write(crypt.crypt(sys.argv[1],sys.argv[2]))", password, salt],
+        ["mkpasswd", "-m", "des", "-S", salt, password],
+    ]
+    for cmd in attempts:
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            continue
+        out = (r.stdout or "").strip()
+        if r.returncode == 0 and len(out) == DES_HASH_LEN and not out.startswith("$"):
+            return out
+    die("cannot generate a DES hash: need perl, python3 <3.13 (crypt), or mkpasswd.\n"
+        "         Generate one elsewhere and pass --root-hash <13-char hash>\n"
+        "         e.g. perl -e 'print crypt($ARGV[0], $ARGV[1])' mypass ab")
+
 
 def die(msg):
     print(f"\n  ERROR: {msg}", file=sys.stderr)
@@ -158,7 +184,7 @@ def inspect(path):
 
 # --------------------------------------------------------------------------- rootfs
 
-def build_rootfs(ius, pubkey, work, shrink=True):
+def build_rootfs(ius, pubkey, work, shrink=True, root_hash=None):
     version = ius[0x10:0x18].split(b"\x00")[0].decode("ascii", "replace")
     sq_off = IUS_ROOTFS_OFF
     region = len(ius) - sq_off
@@ -197,11 +223,32 @@ def build_rootfs(ius, pubkey, work, shrink=True):
 
     cfg = os.path.join(root, "etc/sshd_config")
     ctext = open(cfg).read()
-    add = [l for l in SSHD_CONFIG_ADD
+    wanted = list(SSHD_CONFIG_ADD)
+    if root_hash:
+        wanted = ["PermitRootLogin yes", "PasswordAuthentication yes", "UseDNS no"]
+        ctext = re.sub(r"(?m)^\s*PasswordAuthentication\s+.*$", "", ctext).rstrip() + "\n"
+    add = [l for l in wanted
            if not re.search(rf"(?m)^\s*{l.split()[0]}\s", ctext)]
     if add:
         open(cfg, "w").write(ctext.rstrip() + "\n" + "\n".join(add) + "\n")
     ok(f"sshd_config      {', '.join(add) if add else 'already set'}")
+
+    if root_hash:
+        sh = os.path.join(root, "etc/shadow")
+        lines = open(sh).read().splitlines()
+        out, hit = [], False
+        for ln in lines:
+            if ln.startswith("root:"):
+                f = ln.split(":")
+                f[1] = root_hash
+                out.append(":".join(f))
+                hit = True
+            else:
+                out.append(ln)
+        if not hit:
+            die("no root entry in etc/shadow -- firmware layout changed")
+        open(sh, "w").write("\n".join(out) + "\n")
+        ok(f"shadow           root hash set ({root_hash}, {len(root_hash)} chars)")
 
     marker = os.path.join(root, "etc/goldshell-custom-fw")
     with open(marker, "w") as f:
@@ -366,6 +413,12 @@ def main():
                     help="passphrase for the signing key (default: $GOLDSHELL_KEY_PASS)")
     ap.add_argument("--verify-key", default=None, help="vendor public key (default: derived)")
     ap.add_argument("--no-shrink", action="store_true", help="keep files in SHRINK")
+    ap.add_argument("--root-password", default=None,
+                    help="plaintext root password to bake in (DES: max 8 chars). "
+                         "Enables PasswordAuthentication. The rootfs is read-only, so this "
+                         "is the only way to have a password at all.")
+    ap.add_argument("--root-hash", default=None,
+                    help="precomputed 13-char DES crypt hash instead of --root-password")
     ap.add_argument("--rootfs-offset", default="0x389E00",
                     help="offset of the rootfs squashfs inside firmware.ius (default 0x389E00)")
     ap.add_argument("--inspect", metavar="CPB", help="print container layout and exit")
@@ -374,6 +427,18 @@ def main():
 
     global IUS_ROOTFS_OFF
     IUS_ROOTFS_OFF = int(str(a.rootfs_offset), 0)
+
+    root_hash = a.root_hash
+    if root_hash and a.root_password:
+        die("pass either --root-password or --root-hash, not both")
+    if a.root_password:
+        if len(a.root_password) > 8:
+            print(f"   warning: DES truncates at 8 chars -- "
+                  f"{a.root_password[:8]!r} is what will work", file=sys.stderr)
+        root_hash = des_crypt(a.root_password[:8], os.urandom(1).hex()[:2])
+        print(f"   root password    DES hash {root_hash}", file=sys.stderr)
+    if root_hash and len(root_hash) != DES_HASH_LEN:
+        die(f"--root-hash must be {DES_HASH_LEN} chars (got {len(root_hash)})")
 
     if not a.passphrase and not a.inspect:
         die("no signing-key passphrase: pass --passphrase or set $GOLDSHELL_KEY_PASS")
@@ -410,7 +475,8 @@ def main():
         ius = files["firmware.ius"]
         ok(f"firmware.ius {len(ius):,} bytes, rootfs at {IUS_ROOTFS_OFF:#x}")
 
-        sqfs, region = build_rootfs(ius, a.pubkey, work, shrink=not a.no_shrink)
+        sqfs, region = build_rootfs(ius, a.pubkey, work, shrink=not a.no_shrink,
+                                    root_hash=root_hash)
         new_ius = patch_ius(ius, sqfs, region)
         ok(f"patched in place, {len(new_ius):,} bytes (unchanged length)")
 
