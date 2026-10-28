@@ -1,0 +1,10 @@
+# never commit these
+keys/
+*.cpb
+*.ius
+*.ius.sig
+*.sqfs
+*.squashfs
+firmware/
+__pycache__/
+*.pyc
