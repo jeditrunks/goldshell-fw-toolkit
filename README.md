@@ -70,11 +70,11 @@ universal unlock. Extract it locally, keep it local.
 
 ## Before you start
 
-1. The **stock `.cpb`** for your model and firmware version, from the vendor.
-2. The **OTA signing key**, pulled from your own unit's rootfs:
-   `/root/settings/fw_cmpt.pem` (AES-encrypted PEM). Its public half,
-   `fw_cmpt.verify.pem`, is what the device checks signatures against.
-3. An **SSH public key** you hold the private half of.
+1. The **official firmware file** for your miner — the `.cpb` Goldshell publishes for your
+   model and version.
+2. The **signing key that ships inside that firmware**, which the miner uses to accept updates.
+   One command pulls it out; see [docs/SIGNING-KEY.md](docs/SIGNING-KEY.md).
+3. An **SSH key pair** you own.
 4. `squashfs-tools`, `openssl`, `python3`, `curl`.
 
 Put them somewhere ignored by git (`keys/` and `*.cpb` are already in `.gitignore`).
@@ -154,7 +154,7 @@ container/table validation. That is why an in-place patch is sufficient.
 
 ---
 
-## Model support
+## Adding another model (technical)
 
 `--rootfs-offset` defaults to `0x389E00`, which both verified models use. The squashfs
 budget is derived per image (`region - 1024`), so a different model needs only a correct
