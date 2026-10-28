@@ -14,6 +14,19 @@ Full evidence — checksums, the 12/12 verification output, hashrate and share c
 the flash: **[docs/VALIDATION.md](docs/VALIDATION.md)**. The KD Box II proved the approach;
 the CK Box II proved it generalises.
 
+## Documentation
+
+| Doc | What it is |
+|---|---|
+| **[docs/STEP-BY-STEP.md](docs/STEP-BY-STEP.md)** | the whole process, numbered, with expected output and failure modes |
+| [docs/VALIDATION.md](docs/VALIDATION.md) | what was actually observed on both models |
+| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | symptom → what it means → what to do, plus model differences |
+| [docs/SIGNING-KEY.md](docs/SIGNING-KEY.md) | the vendor key: what it is, where it lives, why the passphrase is not here |
+| [docs/FINDINGS.md](docs/FINDINGS.md) | how the container and the update chain work |
+| [docs/PROCEDURE.md](docs/PROCEDURE.md) | build internals: offsets, budgets, shrink list |
+| [docs/WEBGUI.md](docs/WEBGUI.md) | flashing from the web UI instead of the CLI |
+| [docs/AGENTS.md](docs/AGENTS.md) | condensed brief for AI assistants working on this |
+
 ---
 
 ## What this repository deliberately does **not** contain
@@ -43,22 +56,32 @@ Put them somewhere ignored by git (`keys/` and `*.cpb` are already in `.gitignor
 
 ## Quick start
 
+**The full procedure — every command, expected output, and the failure modes — is
+[docs/STEP-BY-STEP.md](docs/STEP-BY-STEP.md).** Read that first; this is the compressed form.
+
 ```sh
-# 1. look at the container without changing anything
+# 1. identify the target and its mcbversion
+curl -s http://<miner-ip>/mcb/status
+
+# 2. look at the container without changing anything
 ./tools/build.py --inspect stock.cpb
 
-# 2. build
+# 3. carve out the rootfs and the vendor signing key it ships
+./tools/extract.py --cpb stock.cpb --out build/ --unsquashfs
+cp build/rootfs/root/settings/fw_cmpt{,.verify}.pem keys/
+
+# 4. build
 GOLDSHELL_KEY_PASS=... ./tools/build.py \
     --stock      stock.cpb \
     --out        custom.cpb \
     --pubkey     keys/id_rsa.pub \
     --signing-key keys/fw_cmpt.pem
 
-# 3. verify independently before it goes near a device
+# 5. verify independently before it goes near a device
 ./tools/verify.py --stock stock.cpb --new custom.cpb \
     --verify-key keys/fw_cmpt.verify.pem --pubkey keys/id_rsa.pub
 
-# 4. flash over the authenticated OTA path
+# 6. flash over the authenticated OTA path
 ./tools/flash.sh <miner-ip> custom.cpb
 ```
 

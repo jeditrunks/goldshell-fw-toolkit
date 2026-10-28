@@ -125,8 +125,8 @@ After the box comes back:
 
    ```sh
    ssh -i ~/.ssh/kdbox_rsa \
-       -o PubkeyAcceptedKeyTypes=+ssh-rsa -o HostKeyAlgorithms=+ssh-rsa \
-       root@<miner-ip> 'id; cat /etc/kdbox-custom-fw'
+       -o PubkeyAcceptedAlgorithms=+ssh-rsa \
+       root@<miner-ip> 'id; cat /etc/goldshell-custom-fw'
    ```
 
    Expect `uid=0(root)` and the marker line.

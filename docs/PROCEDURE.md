@@ -110,7 +110,7 @@ unsquashfs -d root stock-rootfs.sqfs
 | `root/.ssh/authorized_keys` ← `keys/id_rsa.pub`, `chmod 700 .ssh` / `600 authorized_keys` | key-based root login |
 | `etc/init.d/S50sshd`: `stop()` body replaced with an `echo` | `minerd` calls `S50sshd stop` at boot, which is `killall sshd`. This single call *is* the "SSH disabled" mechanism. |
 | `etc/sshd_config`: append `PermitRootLogin yes`, `PasswordAuthentication no`, `UseDNS no` | the stock config ships the root-login lines commented out |
-| `etc/kdbox-custom-fw` marker | lets you prove from a shell which image is running |
+| `etc/goldshell-custom-fw` marker | lets you prove from a shell which image is running |
 
 `UseDNS no` is not cosmetic — without it sshd stalls on reverse lookup and logins take
 ~10 s.
@@ -201,7 +201,7 @@ Verification checklist before flashing (the script enforces all of these):
    `[0x389E00, 0x389E00+REGION)`;
 5. signature verifies against `fw_cmpt.verify.pem`;
 6. the squashfs inside the packaged `.ius` mounts (`unsquashfs -s`) and lists
-   `root/.ssh/authorized_keys` and `etc/kdbox-custom-fw`;
+   `root/.ssh/authorized_keys` and `etc/goldshell-custom-fw`;
 7. file is 1024-byte aligned after member 0.
 
 ---
@@ -241,7 +241,7 @@ container was rejected without being written — no harm done, but nothing was i
 ```sh
 ssh -i ~/.ssh/kdbox_rsa \
     -o IdentitiesOnly=yes -o PubkeyAcceptedAlgorithms=+ssh-rsa \
-    root@<miner-ip> 'id; cat /etc/kdbox-custom-fw; uptime'
+    root@<miner-ip> 'id; cat /etc/goldshell-custom-fw; uptime'
 ```
 
 Expect `uid=0(root) gid=0(root) groups=0(root),10(wheel)` and the marker.
@@ -250,7 +250,7 @@ Login gotcha, verified on `.198` (2026-10-28): a bare `ssh root@<ip>` fails with
 `Permission denied (publickey,…)` — the default key set is rejected. You need
 `-i` to name the key, `IdentitiesOnly=yes` so no earlier agent key eats the
 offer, and `PubkeyAcceptedAlgorithms=+ssh-rsa` because newer clients dropped
-ssh-rsa user-key signatures by default (`PubkeyAcceptedKeyTypes` is the
+ssh-rsa user-key signatures by default (`PubkeyAcceptedAlgorithms` is the
 deprecated alias of the same option, used in older copies of this doc). The
 host key needs no flag: the box's 6.4p1 sshd offers an ECDSA host key, so the
 handshake is fine with defaults.
