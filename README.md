@@ -25,7 +25,7 @@ the CK Box II proved it generalises.
 | [docs/FINDINGS.md](docs/FINDINGS.md) | how the container and the update chain work |
 | [docs/PROCEDURE.md](docs/PROCEDURE.md) | build internals: offsets, budgets, shrink list |
 | [docs/WEBGUI.md](docs/WEBGUI.md) | flashing from the web UI instead of the CLI |
-| [docs/AGENTS.md](docs/AGENTS.md) | condensed brief for AI assistants working on this |
+| **[AGENTS.md](AGENTS.md)** | machine brief for AI agents: invariants, cookbook, decision table, pre-flash gates |
 
 ---
 
