@@ -1,27 +1,44 @@
 # Goldshell firmware toolkit
 
-Rebuild a Goldshell miner's rootfs from a **stock vendor package** and get permanent root
-SSH on hardware you own.
+**Get a permanent root shell on your own Goldshell miner.**
 
-**Aimed at Goldshell miners of this generation.** Two models are verified end to end:
-KD Box II 2.2.7 and CK Box II 2.2.2. Both share a rootfs at `0x389E00`, an RSA-signed
-`firmware.ius`, and the same `S50sshd` kill — which is why the tooling carries no
-model-specific code and the build budget is derived per image.
+Goldshell miners are locked down out of the box. SSH is installed, but something on the box
+kills it a couple of seconds after every boot — so the only way in is the web page and its
+factory password. This toolkit fixes that, on hardware you own:
 
-Other models are **untested**. If one shares that layout it will probably work, but do not
-assume it: run `--inspect` on its stock package first and compare against the table above.
+- you supply the **official firmware file** the vendor publishes for your miner;
+- it adds **your SSH key** and stops the box from killing SSH at boot;
+- it gives you back a normal firmware package that installs through the miner's **own update
+  page**.
 
-This repo supersedes the model-specific predecessors (`kdbox-fw*`, `kdbox-ii-builder`, now
-removed).
+After the update you can `ssh root@<your-miner>`, and it keeps working across reboots. Mining
+carries on as before.
 
-| Model | Firmware | MCB | Result |
-|---|---|---|---|
-| KD Box II | 2.2.7 | `MCB_V6_3_5` | `uid=0(root)` over SSH, survives cold boot, mining unaffected |
-| CK Box II | 2.2.2 | `MCB_V6_3_5` | `uid=0(root)` over SSH, box came back and resumed hashing |
+No hardware mods, no serial cable, no opening the case. The miner updates itself exactly the
+way it would with an official release.
 
-Full evidence — checksums, the 12/12 verification output, hashrate and share counters after
-the flash: **[docs/VALIDATION.md](docs/VALIDATION.md)**. The KD Box II proved the approach;
-the CK Box II proved it generalises.
+## Does it work on my miner?
+
+| Miner | Firmware | Result |
+|---|---|---|
+| KD Box II | 2.2.7 | root SSH confirmed, survives cold boot, mining unaffected |
+| CK Box II | 2.2.2 | root SSH confirmed, box came back and resumed hashing |
+
+Two models, both tested end to end on real hardware — the flash, the reboot, and the miner
+resuming work. Evidence: [docs/VALIDATION.md](docs/VALIDATION.md).
+
+**Other Goldshell models are untested.** They may work — nothing in the tooling is specific to
+those two — but check before assuming:
+
+```sh
+./tools/build.py --inspect your-stock-firmware.cpb
+```
+
+If it describes your package the same way, you're probably fine. If it says *"no second gzip
+member found"*, or the layout looks different, stop and read
+[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) first.
+
+This repo replaces the older model-specific ones (`kdbox-fw*`, `kdbox-ii-builder`).
 
 ## Documentation
 
@@ -39,7 +56,7 @@ the CK Box II proved it generalises.
 
 ---
 
-## What this repository deliberately does **not** contain
+## What's deliberately not in here
 
 - **No vendor signing key.** The tool needs one; you extract it from your own unit.
 - **No firmware images** — not stock, not built.
@@ -51,7 +68,7 @@ universal unlock. Extract it locally, keep it local.
 
 ---
 
-## What you need
+## Before you start
 
 1. The **stock `.cpb`** for your model and firmware version, from the vendor.
 2. The **OTA signing key**, pulled from your own unit's rootfs:
@@ -108,7 +125,7 @@ it is your rollback.
 
 ---
 
-## How it works
+## How it works (the technical bit)
 
 ```
 stock .cpb
