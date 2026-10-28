@@ -10,6 +10,10 @@ SSH on hardware you own.
 | KD Box II | 2.2.7 | `MCB_V6_3_5` | `uid=0(root)` over SSH, survives cold boot, mining unaffected |
 | CK Box II | 2.2.2 | `MCB_V6_3_5` | `uid=0(root)` over SSH, box came back and resumed hashing |
 
+Full evidence — checksums, the 12/12 verification output, hashrate and share counters after
+the flash: **[docs/VALIDATION.md](docs/VALIDATION.md)**. The KD Box II proved the approach;
+the CK Box II proved it generalises.
+
 ---
 
 ## What this repository deliberately does **not** contain
